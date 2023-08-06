@@ -2,15 +2,14 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../common/Header";
 import Container from "../common/Container";
-import { nanoid } from "@reduxjs/toolkit";
-import { useDispatch, useSelector } from "react-redux";
-import { addPost } from "../redux/slice/posts";
+import { useSelector } from "react-redux";
+import { useMutation } from "react-query";
+import axios from "axios";
 
 export default function Create() {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const posts = useSelector((state) => state.posts);
+  // redux에 있는 user(email) 데이터 가져오기
   const user = useSelector((state) => state.authSlice.user);
 
   // 변경된 내용 한번에 상태 관리
@@ -19,11 +18,28 @@ export default function Create() {
     content: "",
   });
 
+  // db.json에 새로운 게시글 추가
+  const mutation = useMutation(async () => {
+    await axios.post("http://localhost:4000/posts", {
+      // 추가할 내용
+      title: createInput.title,
+      content: createInput.content,
+      author: user,
+    });
+  });
+
   const onCangeHandler = (e) => {
     setCreateInput((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
+  };
+
+  const onSubmitHandler = (e) => {
+    e.preventDefault();
+    // 게시글 추가 실행 : .mutate()
+    mutation.mutate();
+    navigate("/");
   };
 
   return (
@@ -37,26 +53,13 @@ export default function Create() {
             flexDirection: "column",
             justifyContent: "space-evenly",
           }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            // console.log("제출!");
-            const newPost = {
-              id: nanoid(),
-              title: createInput.title,
-              content: createInput.content,
-              author: user,
-            };
-
-            dispatch(addPost(newPost));
-
-            navigate("/");
-          }}
+          onSubmit={onSubmitHandler}
         >
           <div>
             <input
               name="title"
               placeholder="제목"
-              value={posts.title}
+              value={createInput.title}
               onChange={onCangeHandler}
               style={{
                 width: "100%",
@@ -77,7 +80,7 @@ export default function Create() {
             <textarea
               name="content"
               placeholder="내용"
-              value={posts.content}
+              value={createInput.content}
               onChange={onCangeHandler}
               style={{
                 resize: "none",
