@@ -10,9 +10,18 @@ import { useDispatch } from "react-redux";
 import { useEffect } from "react";
 import { loginSuccess } from "./redux/slice/authSlice";
 import { onAuthStateChanged } from "firebase/auth";
+import { useQuery } from "react-query";
 import { auth } from "./firebase";
+import axios from "axios";
 
 function App() {
+  // react-query로 백엔드로부터 데이터 가져오기
+  const { data, isLoading } = useQuery("posts", async () => {
+    const response = await axios.get("http://localhost:4000/posts");
+    return response.data;
+  });
+  console.log("데이터:", data); // 가져온 데이터 확인 !
+  console.log("로딩여부:", isLoading); // 로딩여부 확인 !
   const dispatch = useDispatch();
 
   // 옵저버 역할 : onAuthStateChanged()
