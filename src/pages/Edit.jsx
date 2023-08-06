@@ -2,13 +2,17 @@ import React, { Fragment, useState } from "react";
 import Header from "../common/Header";
 import Container from "../common/Container";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { editPost } from "../redux/slice/posts";
+import { useQueryClient } from "react-query";
+import { useMutation } from "react-query";
+import axios from "axios";
+
+const API_BASE_URL = "http://localhost:4000/posts";
 
 export default function Edit() {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { state } = useLocation();
+  console.log(state); // 받아온 데이터 확인하기
+  const queryClient = new useQueryClient();
 
   // 변경된 내용 한번에 상태 관리
   const [editInput, setEditInput] = useState({
@@ -16,19 +20,26 @@ export default function Edit() {
     content: state?.data.content || "",
   });
 
+  // db.json에서 게시글 수정 : 수정한 내용을 인자로 받아 실행
+  const editMutation = useMutation(
+    async (editData) => {
+      await axios.put(`${API_BASE_URL}/${state.data.id}`, editData);
+    },
+    {
+      // 데이터를 성공적으로 가져오면, 데이터 다시 가져와서 화면에 그려줘
+      onSuccess: () => {
+        queryClient.invalidateQueries("posts");
+      },
+    }
+  );
+
   const editBtnHandler = (e) => {
     e.preventDefault();
-    console.log("제출!");
-
-    // 수정된 내용을 dispatch하여 Redux 상태를 업데이트
-    dispatch(
-      editPost({
-        id: state.data.id,
-        title: editInput.title,
-        content: editInput.content,
-      })
-    );
-
+    editMutation.mutate({
+      title: editInput.title,
+      content: editInput.content,
+      author: state?.data.author, // 유지해야하는 기존 작성자 정보
+    });
     navigate("/");
   };
 
